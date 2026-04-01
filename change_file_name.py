@@ -10,8 +10,13 @@ def remove_string_from_filenames(directory, remove_string):
     """
     # 获取文件夹中的所有文件
     for filename in os.listdir(directory):
-        # 检查文件是否以.xlsx结尾，并且是否包含需要去除的字符串
-        if filename.endswith('.xlsx') and remove_string in filename:
+        if not filename.endswith('.xlsx'):
+            continue
+        # WPS：.~xxx.xlsx；Excel：~$xxx.xlsx
+        if filename.startswith('.~') or filename.startswith('~$'):
+            continue
+        # 检查是否包含需要去除的字符串
+        if remove_string in filename:
             # 构造新的文件名
             new_filename = filename.replace(remove_string, '')
             # 获取旧文件的完整路径和新文件的完整路径

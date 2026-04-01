@@ -156,8 +156,12 @@ def find_xlsx_files(directory):
     xlsx_files = []
     for root, dirs, files in os.walk(directory):
         for file in files:
-            if file.endswith('.xlsx'):
-                xlsx_files.append(os.path.join(root, file))
+            if not file.endswith('.xlsx'):
+                continue
+            # WPS 锁副本：.~原名.xlsx；Excel 锁文件：~$原名.xlsx
+            if file.startswith('.~') or file.startswith('~$'):
+                continue
+            xlsx_files.append(os.path.join(root, file))
     return xlsx_files
 
 # 示例用法

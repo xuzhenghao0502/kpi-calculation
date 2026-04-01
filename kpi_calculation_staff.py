@@ -27,7 +27,7 @@ def check_format_and_calculate_performance(file_path, deduction_json):
             raise ValueError("绩效目标截止行缺失")
 
         # 检查D7单元格和F8单元格
-        if sheet['D7'].value != "任务目标" or sheet['F8'].value != "底线值":
+        if sheet['D7'].value != "任务目标" or sheet['F7'].value != "目标值":
             raise ValueError("绩效目标起始行错误")
 
     except ValueError as e:
@@ -45,9 +45,9 @@ def check_format_and_calculate_performance(file_path, deduction_json):
     for row in range(start_row, end_row + 1):
         task_name = sheet.cell(row=row, column=4).value  # D列
         weight = sheet.cell(row=row, column=5).value  # E列
-        time_score = sheet.cell(row=row, column=12).value  # L列
-        quality_score1 = sheet.cell(row=row, column=13).value  # M列
-        quality_score2 = sheet.cell(row=row, column=14).value  # N列
+        time_score = sheet.cell(row=row, column=11).value  # K列
+        quality_score1 = sheet.cell(row=row, column=12).value  # L列
+        quality_score2 = sheet.cell(row=row, column=13).value  # M列
 
         if not task_name:
             continue
@@ -91,10 +91,10 @@ def check_format_and_calculate_performance(file_path, deduction_json):
 
     if start_personal and end_personal:
         for row in range(start_personal, end_personal + 1):
-            weight = sheet.cell(row=row, column=12).value  # L列
-            score1 = sheet.cell(row=row, column=14).value  # N列
-
-            score2 = sheet.cell(row=row, column=15).value  # O列
+            # 表头：K=权重，L=自评，M=直接上级，N=隔级上级（勿把 L 自评当权重，否则会远大于100）
+            weight = sheet.cell(row=row, column=11).value  # K列
+            score1 = sheet.cell(row=row, column=13).value  # M列
+            score2 = sheet.cell(row=row, column=14).value  # N列
 
             if score2 is None:
                 score2 = score1
@@ -165,14 +165,19 @@ def find_xlsx_files(directory):
     xlsx_files = []
     for root, dirs, files in os.walk(directory):
         for file in files:
-            if file.endswith('.xlsx'):
-                xlsx_files.append(os.path.join(root, file))
+            if not file.endswith('.xlsx'):
+                continue
+            # WPS 锁副本：.~原名.xlsx；Excel 锁文件：~$原名.xlsx
+            if file.startswith('.~') or file.startswith('~$'):
+                continue
+            xlsx_files.append(os.path.join(root, file))
     return xlsx_files
 
 # 示例用法
-directory = '/home/zhenghao/Program/kpi/data/2025Q4-staff/2025Q4-staff'  # 替换为你的文件夹路径
-deduction_json = Path('/home/zhenghao/Program/kpi/data/2025Q4-staff/deduction.json')
+directory = '/home/zhenghao/Program/kpi-calculation/data/2026Q1-test'  # 替换为你的文件夹路径
+deduction_json = Path('/home/zhenghao/Program/kpi-calculation/data/2026Q1-test/deduction.json')
 xlsx_files = find_xlsx_files(directory)
+print(xlsx_files)
 member_list = []
 for file_path in xlsx_files:
     member = check_format_and_calculate_performance(file_path, deduction_json)
