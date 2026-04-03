@@ -40,7 +40,7 @@ def remove_string_from_filenames(directory, strings_to_remove):
 
 
 # 使用示例
-directory_path = "/home/zhenghao/Program/kpi-calculation/data/2026Q1-staff/规划与控制/"
+directory_path = "/home/zhenghao/Program/kpi-calculation/data/2026Q1-staff/26Q1slam绩效自评/"
 strings_to_remove = [
     "2026Q1绩效考评表-", 
     "研发中心季度绩效考评表-",
