@@ -1,7 +1,70 @@
 import openpyxl
 import os
 import json
+import unicodedata
 from pathlib import Path
+
+
+def _display_width(s: str) -> int:
+    w = 0
+    for ch in s:
+        if unicodedata.east_asian_width(ch) in ("F", "W"):
+            w += 2
+        else:
+            w += 1
+    return w
+
+
+def _pad_to_display_width(s: str, width: int, align: str = "left") -> str:
+    d = _display_width(s)
+    pad = width - d
+    if pad <= 0:
+        return s
+    if align == "right":
+        return " " * pad + s
+    return s + " " * pad
+
+
+def print_member_table(members: list) -> None:
+    """每人一行 + 表头，便于整体浏览。"""
+    members = [m for m in members if m is not None]
+    if not members:
+        print("(无有效计算结果)")
+        return
+
+    headers = ("姓名", "时间分", "质量分", "项目分", "素质分", "最终分", "勤勉", "扣分后")
+    num_w = 7
+    dil_w = max(2, _display_width(headers[6]))
+    name_w = max(_display_width(m.name) for m in members)
+    name_w = max(name_w, _display_width(headers[0]))
+    widths = [name_w, num_w, num_w, num_w, num_w, num_w, dil_w, num_w]
+    aligns = ("left", "right", "right", "right", "right", "right", "left", "right")
+    gap = "  "
+
+    def row(cells: tuple[str, ...]) -> str:
+        parts = [
+            _pad_to_display_width(c, w, "left" if a == "left" else "right")
+            for c, w, a in zip(cells, widths, aligns)
+        ]
+        return gap.join(parts)
+
+    print(row(headers))
+    sep_len = sum(widths) + len(gap) * (len(widths) - 1)
+    print("-" * sep_len)
+
+    for m in members:
+        diligent = "是" if m.overtime_penalty else "否"
+        cells = (
+            m.name,
+            f"{m.final_time_score:.2f}",
+            f"{m.final_quality_score:.2f}",
+            f"{m.task_score:.2f}",
+            f"{m.personal_score:.2f}",
+            f"{m.final_score:.2f}",
+            diligent,
+            f"{m.final_score_include_deduction:.2f}",
+        )
+        print(row(cells))
 
 
 
@@ -149,12 +212,6 @@ class Member:
             return NotImplemented
         return self.final_score_include_deduction == other.final_score_include_deduction
 
-    def show(self):
-        output = (f"{self.name}： \t总完成时间分：{self.final_time_score:.2f}，总完成质量分：{self.final_quality_score:.2f}，"
-                  f"总项目分：{self.task_score:.2f}，综合素质分：{self.personal_score:.2f}，"
-                  f"最终绩效分：{self.final_score:.2f}，勤勉度扣分：{self.overtime_penalty}, 考虑扣分的最终得分：{self.final_score_include_deduction:.2f}")
-        print(output)
-
 # 调用函数
 # check_format_and_calculate_performance('test.xlsx')
 
@@ -174,14 +231,13 @@ def find_xlsx_files(directory):
     return xlsx_files
 
 # 示例用法
-directory = '/home/zhenghao/Program/kpi-calculation/data/2026Q1-test'  # 替换为你的文件夹路径
-deduction_json = Path('/home/zhenghao/Program/kpi-calculation/data/2026Q1-test/deduction.json')
+directory = '/home/zhenghao/Program/kpi-calculation/data/2026Q1-staff'  # 替换为你的文件夹路径
+deduction_json = Path('/home/zhenghao/Program/kpi-calculation/data/2026Q1-staff/deduction.json')
 xlsx_files = find_xlsx_files(directory)
-print(xlsx_files)
 member_list = []
 for file_path in xlsx_files:
     member = check_format_and_calculate_performance(file_path, deduction_json)
     member_list.append(member)
+member_list = [m for m in member_list if m is not None]
 member_list.sort(reverse=True)
-for member in member_list:
-    member.show()
+print_member_table(member_list)
